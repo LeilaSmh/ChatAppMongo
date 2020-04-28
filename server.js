@@ -1,49 +1,46 @@
-const mongo = require('mongodb').MongoClient;
+const MongoClient = require('mongodb').MongoClient;
 const client = require('socket.io').listen(4000).sockets;
 
-// Connect to mongo
-mongo.connect('mongodb://127.0.0.1/mongochat', function(err, db){
+//Connexion à la base de donnée MongoDB
+MongoClient.connect('mongodb://127.0.0.1/mongochat', function(err, db){
     if(err){
         throw err;
     }
 
-    console.log('MongoDB connected...');
+    console.log('Database Created Successfully...');
 
-    // Connect to Socket.io
+    // Se Connecter à Socket.io
     client.on('connection', function(socket){
         let chat = db.collection('chats');
 
-        // Create function to send status
-        sendStatus = function(s){
+        // Envoyer le statut au serveur
+        setStatus = function(s){
             socket.emit('status', s);
         }
 
-        // Get chats from mongo collection
+        // Accéder aux messages
         chat.find().limit(100).sort({_id:1}).toArray(function(err, res){
             if(err){
                 throw err;
             }
-
-            // Emit the messages
             socket.emit('output', res);
         });
 
-        // Handle input events
+        // Les messages d'entrées
         socket.on('input', function(data){
             let name = data.name;
             let message = data.message;
 
-            // Check for name and message
+            // Vérifier si le nom ou le message sont vides
             if(name == '' || message == ''){
-                // Send error status
-                sendStatus('Please enter a name and message');
+                setStatus('Veuillez entrer un nom et un message');
             } else {
-                // Insert message
+                // Insérer le message dans la base de données
                 chat.insert({name: name, message: message}, function(){
                     client.emit('output', [data]);
 
-                    // Send status object
-                    sendStatus({
+                    // Renvoyer le statut 
+                    setStatus({
                         message: 'Message sent',
                         clear: true
                     });
@@ -51,11 +48,10 @@ mongo.connect('mongodb://127.0.0.1/mongochat', function(err, db){
             }
         });
 
-        // Handle clear
+        // Gérer clear
         socket.on('clear', function(data){
-            // Remove all chats from collection
+            // Supprimer tous les messages de la collection
             chat.remove({}, function(){
-                // Emit cleared
                 socket.emit('cleared');
             });
         });
