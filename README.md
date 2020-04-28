@@ -1,3 +1,3 @@
-# MongoChat
 
-Chat App using MongoDB and Socket.io
+# MongoChat
+Chat App using Socket.io and MongoDB
